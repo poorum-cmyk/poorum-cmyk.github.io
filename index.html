@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>모바일 테트리스</title>
   <style>
-    :root{--bg:#0b1020;--panel:#0f1724;--accent:#06b6d4;--btn:#0ea5e9;--panel-width:120px}
+    :root{--bg:#0b1020;--panel:#0f1724;--accent:#06b6d4;--btn:#0ea5e9;--panel-width:160px}
     html,body{height:100%;margin:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;background:linear-gradient(180deg,#071024,#07172b);color:#e6eef6;overflow:hidden;overscroll-behavior:none;-webkit-user-select:none;-webkit-touch-callout:none}
     .wrap{max-width:100%;width:100%;height:100vh;margin:0;padding:12px;box-sizing:border-box;display:flex;flex-direction:column}
     .game{display:flex;gap:12px;align-items:start;height:100%;}
@@ -14,7 +14,7 @@
     .score{font-size:18px;font-weight:700;color:var(--accent)}
     .info{font-size:13px;color:#9fb0c4}
     .controls{position:static;z-index:40}
-    .controls--right{position:static}
+    .controls--right{position:fixed;right:12px;bottom:12px;z-index:60}
     .touch-btn{width:86px;height:86px;border-radius:18px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;border:1px solid rgba(255,255,255,0.04);box-shadow:0 6px 18px rgba(2,6,23,0.6)}
     .touch-btn:active{transform:translateY(2px)}
     .small{width:70px;height:70px;border-radius:14px}
@@ -38,7 +38,7 @@
     <div class="game">
       <div class="play-area" style="display:flex;flex-direction:column;align-items:center;gap:12px">
         <canvas id="playfield" width="300" height="600"></canvas>
-        <div id="controlsRow" style="display:flex;justify-content:space-between;align-items:center;gap:18px;width:100%">
+        <div id="controlsRow" style="display:flex;justify-content:flex-start;align-items:center;gap:18px;width:100%">
           <div class="controls" id="moveControl">
             <div id="joystick" class="touch-btn joystick" style="width:120px;height:120px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative">
               <div class="arrow left">◀</div>
@@ -47,15 +47,12 @@
               <div class="knob" style="width:48px;height:48px;border-radius:50%;transition:transform 0.06s linear"></div>
             </div>
           </div>
-          <div class="controls--right" id="actionControl">
-            <div id="rotateBtn" class="touch-btn rotate-btn">회전</div>
-          </div>
         </div>
       </div>
       <div class="right-panel" id="rightPanel">
         <div class="score">스코어: <span id="score">0</span></div>
         <div style="margin-top:6px">다음 조각:</div>
-        <canvas id="next" width="80" height="80" style="background:transparent;border-radius:8px;margin-bottom:0"></canvas>
+        <canvas id="next" width="120" height="120" style="background:transparent;border-radius:8px;margin-bottom:0"></canvas>
         <div class="info">레벨: <span id="level">1</span></div>
         <div class="info">라인: <span id="lines">0</span></div>
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px;width:100%">
@@ -63,6 +60,10 @@
           <button id="pauseBtn" class="play-btn">일시정지</button>
         </div>
       </div>
+    </div>
+    <!-- fixed rotate button at far right edge (will be vertically aligned with controlsRow) -->
+    <div id="rotateWrapper" class="controls--right" style="position:fixed;right:12px;bottom:12px;z-index:70">
+      <div id="rotateBtn" class="touch-btn rotate-btn">회전</div>
     </div>
   </div>
 
@@ -113,13 +114,24 @@
       const nextEl = document.getElementById('next');
       if(nextEl){
         const nDpr = dpr;
-        const nw = 80; const nh = 80;
+          const nw = 120; const nh = 120;
         nextEl.style.width = nw + 'px';
         nextEl.style.height = nh + 'px';
         nextEl.width = nw * nDpr;
         nextEl.height = nh * nDpr;
         const nctxLocal = nextEl.getContext('2d');
         nctxLocal.setTransform(nDpr,0,0,nDpr,0,0);
+      }
+      // align rotate button vertically with the joystick center
+      const rotateWrap = document.getElementById('rotateWrapper');
+      const joystickEl = document.getElementById('joystick');
+      if(joystickEl && rotateWrap){
+        const jrect = joystickEl.getBoundingClientRect();
+        const wrapH = rotateWrap.offsetHeight || 74;
+        const top = Math.round(jrect.top + (jrect.height - wrapH)/2);
+        rotateWrap.style.top = top + 'px';
+        rotateWrap.style.bottom = 'auto';
+      }
       }
     }
     // prevent page scrolling on touch
