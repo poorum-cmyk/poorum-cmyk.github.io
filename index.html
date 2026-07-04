@@ -148,14 +148,20 @@
     function draw(){
       ctx.clearRect(0,0,canvas.width,canvas.height);
       // background grid
+      // draw cell backgrounds and grid lines
       for(let y=0;y<ROWS;y++){
         for(let x=0;x<COLS;x++){
-          ctx.fillStyle = '#092c3a';
-          ctx.fillRect(x*BLOCK,y*BLOCK,BLOCK-1,BLOCK-1);
+          // slightly brighter cell background
+          ctx.fillStyle = '#0f4354';
+          ctx.fillRect(x*BLOCK,y*BLOCK,BLOCK,BLOCK);
+          // grid line (separator)
+          ctx.strokeStyle = 'rgba(3,30,38,0.85)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x*BLOCK+0.5,y*BLOCK+0.5,BLOCK-1,BLOCK-1);
           const v = grid[y][x];
           if(v){
             ctx.fillStyle = colors[v];
-            ctx.fillRect(x*BLOCK+2,y*BLOCK+2,BLOCK-4,BLOCK-4);
+            ctx.fillRect(x*BLOCK+2,y*BLOCK+2,Math.max(1,BLOCK-4),Math.max(1,BLOCK-4));
           }
         }
       }
@@ -239,6 +245,7 @@
         // game over
         running = false;
         playSound('gameover');
+        stopBGM();
         alert('게임 종료\n스코어: ' + score);
       }
     }
@@ -407,6 +414,55 @@
       }
     }
 
+    // Background music (simple synth loop of Korobeiniki-like motif)
+    let bgmInterval = null;
+    let bgmTimers = [];
+    let bgmGain = null;
+    const BGM_VOL = 0.04;
+
+    function startBGM(){
+      try{
+        ensureAudio();
+        // resume audio context on user gesture if suspended
+        if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        if(!audioCtx) return;
+        if(bgmInterval) return; // already playing
+        bgmGain = audioCtx.createGain(); bgmGain.gain.value = BGM_VOL; bgmGain.connect(audioCtx.destination);
+        // simple melody (freq in Hz, duration ms)
+        const seq = [
+          [659.25,180],[622.25,180],[587.33,360],[523.25,360],
+          [587.33,180],[622.25,180],[659.25,360],[659.25,180],[659.25,180],
+          [622.25,180],[622.25,180],[659.25,180],[622.25,180],[587.33,360]
+        ];
+        let idx = 0;
+        function playStep(){
+          const note = seq[idx % seq.length];
+          const osc = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          osc.type = 'square'; osc.frequency.value = note[0];
+          g.gain.value = 0.0001; // start near 0
+          osc.connect(g); g.connect(bgmGain);
+          const now = audioCtx.currentTime;
+          g.gain.setValueAtTime(0.0001, now);
+          g.gain.exponentialRampToValueAtTime(0.09, now + 0.02);
+          osc.start(now);
+          g.gain.exponentialRampToValueAtTime(0.0001, now + note[1]/1000 - 0.02);
+          const stopT = setTimeout(()=>{ try{ osc.stop(); osc.disconnect(); g.disconnect(); }catch(e){} }, note[1]);
+          bgmTimers.push(stopT);
+          idx++;
+        }
+        // play immediately and then set interval to continue
+        playStep();
+        bgmInterval = setInterval(playStep, 1200);
+      }catch(e){}
+    }
+
+    function stopBGM(){
+      if(bgmInterval){ clearInterval(bgmInterval); bgmInterval = null; }
+      while(bgmTimers.length){ const t = bgmTimers.pop(); clearTimeout(t); }
+      if(bgmGain){ try{ bgmGain.disconnect(); }catch(e){} bgmGain = null; }
+    }
+
     // Start / Pause
     startBtn.addEventListener('click', ()=>{
       if(!running){
@@ -415,9 +471,15 @@
         updateScoreDisplays(); linesEl.textContent = lines; levelEl.textContent = level;
         nextPiece = randomPiece(); drawNext();
         spawn(); running = true; lastTime = 0; dropTimer = 0; requestAnimationFrame(update);
+        // start background music
+        startBGM();
       }
     });
-    pauseBtn.addEventListener('click', ()=>{ running = !running; pauseBtn.textContent = running? '일시정지':'재개'; });
+    pauseBtn.addEventListener('click', ()=>{ 
+      running = !running; 
+      pauseBtn.textContent = running? '일시정지':'재개'; 
+      if(running) startBGM(); else stopBGM();
+    });
 
     // initial draw
     draw();
