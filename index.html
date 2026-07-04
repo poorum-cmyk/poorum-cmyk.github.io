@@ -402,7 +402,16 @@
     joystick.addEventListener('pointercancel', e=>{ if(pointerId === e.pointerId){ joystick.releasePointerCapture(e.pointerId); pointerId=null; resetKnob(); stopAllHolds(); } });
 
     // rotate button: simple tap rotates (silent)
-    rotateBtn.addEventListener('pointerdown', e=>{ e.preventDefault(); playerRotate(1, false); });
+    if(rotateBtn){
+      rotateBtn.addEventListener('pointerdown', e=>{ e.preventDefault(); playerRotate(1, false); });
+      rotateBtn.addEventListener('click', e=>{ e.preventDefault(); playerRotate(1, false); });
+      rotateBtn.addEventListener('touchstart', e=>{ e.preventDefault(); playerRotate(1, false); }, {passive:false});
+      // ensure touch behavior enabled
+      rotateBtn.style.touchAction = 'manipulation';
+      const rotateWrapEl = document.getElementById('rotateWrapper'); if(rotateWrapEl) rotateWrapEl.style.pointerEvents = 'auto';
+    } else {
+      console.warn('rotateBtn not found');
+    }
 
     // WebAudio simple sound effects
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -478,8 +487,8 @@
       if(bgmGain){ try{ bgmGain.disconnect(); }catch(e){} bgmGain = null; }
     }
 
-    // Start / Pause
-    startBtn.addEventListener('click', ()=>{
+    // Start / Pause with robust mobile handlers
+    function handleStart(){
       if(!running){
         grid = createMatrix(COLS,ROWS);
         score = 0; lines = 0; level = 1; dropInterval = 800;
@@ -489,12 +498,24 @@
         // start background music
         startBGM();
       }
-    });
-    pauseBtn.addEventListener('click', ()=>{ 
-      running = !running; 
-      pauseBtn.textContent = running? '일시정지':'재개'; 
+    }
+    function handlePauseToggle(){
+      running = !running;
+      pauseBtn.textContent = running? '일시정지':'재개';
       if(running) startBGM(); else stopBGM();
-    });
+    }
+    if(startBtn){
+      startBtn.addEventListener('pointerdown', e=>{ e.preventDefault(); handleStart(); });
+      startBtn.addEventListener('click', e=>{ e.preventDefault(); handleStart(); });
+      startBtn.addEventListener('touchstart', e=>{ e.preventDefault(); handleStart(); }, {passive:false});
+      startBtn.style.touchAction = 'manipulation';
+    } else console.warn('startBtn not found');
+    if(pauseBtn){
+      pauseBtn.addEventListener('pointerdown', e=>{ e.preventDefault(); handlePauseToggle(); });
+      pauseBtn.addEventListener('click', e=>{ e.preventDefault(); handlePauseToggle(); });
+      pauseBtn.addEventListener('touchstart', e=>{ e.preventDefault(); handlePauseToggle(); }, {passive:false});
+      pauseBtn.style.touchAction = 'manipulation';
+    } else console.warn('pauseBtn not found');
 
     // initial draw
     draw();
