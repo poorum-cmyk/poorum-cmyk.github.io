@@ -18,17 +18,18 @@
     .touch-btn{width:86px;height:86px;border-radius:18px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;border:1px solid rgba(255,255,255,0.04);box-shadow:0 6px 18px rgba(2,6,23,0.6)}
     .touch-btn:active{transform:translateY(2px)}
     .small{width:70px;height:70px;border-radius:14px}
-    .joystick{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));}
-    .joystick .knob{pointer-events:none}
-    .joystick .arrow{position:absolute;color:rgba(255,255,255,0.14);font-size:20px;user-select:none}
+    .joystick{background:linear-gradient(180deg,#064b5f,#0b6b86);border:1px solid rgba(255,255,255,0.06)}
+    .joystick .knob{pointer-events:none;background:#06b6d4;box-shadow:0 3px 10px rgba(6,182,212,0.2);}
+    .joystick .arrow{position:absolute;color:rgba(255,255,255,0.9);font-size:20px;user-select:none}
     .joystick .arrow.left{left:12px;top:50%;transform:translateY(-50%)}
     .joystick .arrow.right{right:12px;top:50%;transform:translateY(-50%)}
     .joystick .arrow.down{bottom:12px;left:50%;transform:translateX(-50%)}
     .legend{display:flex;flex-direction:column;gap:6px}
     .right-panel{width:var(--panel-width);min-width:var(--panel-width);background:var(--panel);border-radius:10px;padding:12px 10px;display:flex;flex-direction:column;gap:12px;align-items:flex-start;justify-content:flex-start}
     .btn-row{display:flex;gap:8px}
-    .play-btn{padding:8px 12px;border-radius:10px;border:none;background:var(--btn);color:#042b3a;font-weight:800}
+    .play-btn{width:56px;height:56px;padding:0;border-radius:10px;border:none;background:var(--btn);color:#042b3a;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1}
     .rotate-btn{width:74px;height:74px;border-radius:10px;padding:0;display:flex;align-items:center;justify-content:center}
+    .rotate-btn{background:var(--btn);color:#042b3a;border-radius:10px}
     @media(min-width:900px){.play-area{gap:20px}}
   </style>
 </head>
@@ -43,7 +44,7 @@
               <div class="arrow left">◀</div>
               <div class="arrow right">▶</div>
               <div class="arrow down">▼</div>
-              <div class="knob" style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.12);box-shadow:inset 0 2px 6px rgba(0,0,0,0.4);transition:transform 0.06s linear"></div>
+              <div class="knob" style="width:48px;height:48px;border-radius:50%;transition:transform 0.06s linear"></div>
             </div>
           </div>
           <div class="controls--right" id="actionControl">
@@ -235,25 +236,27 @@
     // ensure canvas sizes match current viewport
     resizeCanvas();
 
-    function spawn(){
-      // use nextPiece if present to make sequence predictable for preview
-      if(!nextPiece) nextPiece = randomPiece();
-      current = {matrix: nextPiece.matrix.map(r=>r.slice()), pos: {x: nextPiece.pos.x, y: nextPiece.pos.y}};
-      nextPiece = randomPiece();
-      drawNext();
-      if(collide(current.matrix,{x:current.pos.x,y:current.pos.y})){
-        // game over
-        running = false;
-        playSound('gameover');
-        stopBGM();
-        alert('게임 종료\n스코어: ' + score);
+    function drawNext(){
+      if(!nextCanvas || !nctx) return;
+      // robustly determine CSS size (clientWidth may be zero on some mobile layouts)
+      let cssW = nextCanvas.clientWidth || parseFloat(getComputedStyle(nextCanvas).width) || (nextCanvas.width / (window.devicePixelRatio||1));
+      let cssH = nextCanvas.clientHeight || parseFloat(getComputedStyle(nextCanvas).height) || (nextCanvas.height / (window.devicePixelRatio||1));
+      // if still zero, retry shortly after layout
+      if(!cssW || !cssH){ setTimeout(drawNext, 40); return; }
+      nctx.clearRect(0,0,nextCanvas.width,nextCanvas.height);
+      if(!nextPiece) return;
+      const mat = nextPiece.matrix;
+      // choose block size to fit the preview box (CSS pixels)
+      const size = Math.floor(Math.min(cssW / mat[0].length, cssH / mat.length));
+      const offsetX = Math.floor((cssW - mat[0].length*size)/2);
+      const offsetY = Math.floor((cssH - mat.length*size)/2);
+      for(let y=0;y<mat.length;y++){
+        for(let x=0;x<mat[y].length;x++){
+          const v = mat[y][x];
+          if(v){ nctx.fillStyle = colors[v]; nctx.fillRect(offsetX + x*size +2, offsetY + y*size +2, Math.max(1,size-4), Math.max(1,size-4)); }
+        }
       }
     }
-
-    function sweep(){
-      let rowCount = 0;
-      outer: for(let y=ROWS-1;y>=0;y--){
-        for(let x=0;x<COLS;x++) if(grid[y][x]===0) continue outer;
         const row = grid.splice(y,1)[0].fill(0);
         grid.unshift(row);
         y++;
@@ -295,7 +298,7 @@
       if(collide(current.matrix,current.pos)) current.pos.x -= dir;
     }
 
-    function playerRotate(dir){
+    function playerRotate(dir, playSoundFlag = true){
       rotate(current.matrix,dir);
       let offset = 1;
       while(collide(current.matrix,current.pos)){
@@ -303,7 +306,7 @@
         offset = -(offset + (offset>0?1:-1));
         if(offset > current.matrix[0].length) { rotate(current.matrix,-dir); return; }
       }
-      playSound('rotate');
+      if(playSoundFlag) playSound('rotate');
     }
 
     function update(time=0){
@@ -386,8 +389,8 @@
     });
     joystick.addEventListener('pointercancel', e=>{ if(pointerId === e.pointerId){ joystick.releasePointerCapture(e.pointerId); pointerId=null; resetKnob(); stopAllHolds(); } });
 
-    // rotate button: simple tap rotates
-    rotateBtn.addEventListener('pointerdown', e=>{ e.preventDefault(); playerRotate(1); });
+    // rotate button: simple tap rotates (silent)
+    rotateBtn.addEventListener('pointerdown', e=>{ e.preventDefault(); playerRotate(1, false); });
 
     // WebAudio simple sound effects
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
