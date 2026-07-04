@@ -26,6 +26,10 @@
     .play-btn{width:56px;height:56px;border-radius:10px;border:none;background:var(--btn);color:#042b3a;font-weight:800;display:flex;align-items:center;justify-content:center}
     .rotate-btn{width:74px;height:74px;border-radius:10px;border:none;background:var(--btn);color:#042b3a;font-weight:800;display:flex;align-items:center;justify-content:center}
     @media(min-width:900px){.wrap{padding:24px}.joystick{width:140px;height:140px}.joystick .knob{width:56px;height:56px}}
+    /* fixed joystick wrapper at bottom-left for mobile */
+    .joystick-wrapper{position:fixed;left:12px;bottom:12px;z-index:90}
+    /* make right-panel labels match vertical layout in mock */
+    .right-panel .info{line-height:1.2}
   </style>
 </head>
 <body>
@@ -34,14 +38,6 @@
       <div class="play-area" id="playArea">
         <canvas id="playfield" width="300" height="600" role="img" aria-label="Tetris playfield"></canvas>
         <div class="controls-row" id="controlsRow">
-          <div id="moveControl">
-            <div id="joystick" class="joystick">
-              <div class="arrow left">◀</div>
-              <div class="arrow right">▶</div>
-              <div class="arrow down">▼</div>
-              <div class="knob"></div>
-            </div>
-          </div>
           <div style="flex:1"></div>
         </div>
       </div>
@@ -60,6 +56,8 @@
       <div id="rotateWrapper" style="position:fixed;right:12px;z-index:80;top:calc(100% - 120px);">
         <button id="rotateBtn" class="rotate-btn">회전</button>
       </div>
+      <!-- fixed joystick wrapper (moved by script) -->
+      <div id="joystickWrapper" class="joystick-wrapper" aria-hidden="false"></div>
     </div>
   </div>
 
@@ -71,6 +69,9 @@
     const nctx = nextCanvas.getContext('2d');
     const joystick = document.getElementById('joystick');
     const knob = joystick.querySelector('.knob');
+    // move joystick into fixed bottom-left wrapper for mobile layout
+    const joystickWrapper = document.getElementById('joystickWrapper');
+    if(joystickWrapper && joystick){ joystickWrapper.appendChild(joystick); }
     const rotateBtn = document.getElementById('rotateBtn');
     const rotateWrap = document.getElementById('rotateWrapper');
     const startBtn = document.getElementById('startBtn');
@@ -112,7 +113,7 @@
       BLOCK = Math.floor(cssWidth / COLS);
       // next preview
       const nw = 84, nh = 84; nextCanvas.style.width = nw + 'px'; nextCanvas.style.height = nh + 'px'; nextCanvas.width = nw * dpr; nextCanvas.height = nh * dpr; nctx.setTransform(dpr,0,0,dpr,0,0);
-      // set controlsRow width
+      // set controlsRow width (kept for alignment under playfield if needed)
       const controlsRow = document.getElementById('controlsRow'); if(controlsRow) controlsRow.style.width = cssWidth + 'px';
       // align rotate button vertically to joystick center
       const jrect = joystick.getBoundingClientRect(); if(jrect && rotateWrap){ const wrapH = rotateWrap.offsetHeight || 74; rotateWrap.style.top = Math.round(jrect.top + (jrect.height - wrapH)/2) + 'px'; }
