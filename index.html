@@ -6,10 +6,10 @@
   <title>모바일 테트리스</title>
   <style>
     :root{--bg:#0b1020;--panel:#0f1724;--accent:#06b6d4;--btn:#0ea5e9}
-    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;background:linear-gradient(180deg,#071024,#07172b);color:#e6eef6}
-    .wrap{max-width:480px;margin:18px auto;padding:12px}
-    .game{display:flex;gap:12px;align-items:start}
-    canvas{background:linear-gradient(180deg,#07172b,#082033);border-radius:8px;box-shadow:0 10px 30px rgba(2,6,23,0.6);touch-action:none}
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;background:linear-gradient(180deg,#071024,#07172b);color:#e6eef6;overflow:hidden;overscroll-behavior:none;-webkit-user-select:none;-webkit-touch-callout:none}
+    .wrap{max-width:100%;width:100%;height:100vh;margin:0;padding:12px;box-sizing:border-box;display:flex;flex-direction:column}
+    .game{display:flex;gap:12px;align-items:start;height:100%;}
+    canvas{background:linear-gradient(180deg,#07172b,#082033);border-radius:8px;box-shadow:0 10px 30px rgba(2,6,23,0.6);touch-action:none;display:block}
     .sidebar{flex:1;min-width:120px;background:var(--panel);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px}
     .score{font-size:18px;font-weight:700;color:var(--accent)}
     .info{font-size:13px;color:#9fb0c4}
@@ -32,23 +32,24 @@
 </head>
 <body>
   <div class="wrap">
-    <h2>모바일 테트리스</h2>
-    <div class="game">
-      <canvas id="playfield" width="300" height="600"></canvas>
-      <div class="sidebar">
+    <div class="topbar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px">
+      <div style="display:flex;align-items:center;gap:12px">
         <div class="score">스코어: <span id="score">0</span></div>
-        <div style="margin-top:6px">다음 조각:</div>
-        <canvas id="next" width="80" height="80" style="background:transparent;border-radius:8px;margin-bottom:6px"></canvas>
+        <div style="margin-left:6px">다음 조각:</div>
+        <canvas id="next" width="80" height="80" style="background:transparent;border-radius:8px;margin-bottom:0"></canvas>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
         <div class="info">레벨: <span id="level">1</span></div>
         <div class="info">라인: <span id="lines">0</span></div>
-        <div class="legend">
-          <div class="info">조작: 화면 터치 또는 키보드(←→↓, ↑ 회전)</div>
-          <div class="btn-row">
-            <button id="startBtn" class="play-btn">시작</button>
-            <button id="pauseBtn" class="play-btn">일시정지</button>
-          </div>
+        <div class="legend" style="margin-left:6px">조작: 화면 터치 또는 키보드(←→↓, ↑ 회전)</div>
+        <div style="display:flex;gap:8px;margin-left:8px">
+          <button id="startBtn" class="play-btn">시작</button>
+          <button id="pauseBtn" class="play-btn">일시정지</button>
         </div>
       </div>
+    </div>
+    <div class="game">
+      <canvas id="playfield" width="300" height="600"></canvas>
     </div>
   </div>
 
@@ -69,7 +70,7 @@
     const canvas = document.getElementById('playfield');
     const ctx = canvas.getContext('2d');
     const COLS = 10, ROWS = 20;
-    const BLOCK = Math.floor(canvas.width / COLS);
+    let BLOCK = 0;
     const scoreEl = document.getElementById('score');
     const levelEl = document.getElementById('level');
     const linesEl = document.getElementById('lines');
@@ -83,6 +84,42 @@
     let lastTime = 0;
     let running = false;
     let score = 0, level = 1, lines = 0;
+
+    // Responsive canvas sizing to fit tall mobile screens (e.g., 2340x1080)
+    function resizeCanvas(){
+      const dpr = window.devicePixelRatio || 1;
+      const availW = window.innerWidth;
+      const availH = window.innerHeight;
+      // choose canvas width as a portion of screen width but no larger than half the height
+      let cssWidth = Math.min(Math.floor(availW * 0.62), Math.floor(availH / 2));
+      // ensure some minimum
+      cssWidth = Math.max(260, cssWidth);
+      const cssHeight = cssWidth * 2; // keep 10:20 ratio
+      canvas.style.width = cssWidth + 'px';
+      canvas.style.height = cssHeight + 'px';
+      canvas.width = cssWidth * dpr;
+      canvas.height = cssHeight * dpr;
+      // scale drawing operations for devicePixelRatio
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      BLOCK = Math.floor(cssWidth / COLS);
+      // scale next preview (query element dynamically)
+      const nextEl = document.getElementById('next');
+      if(nextEl){
+        const nDpr = dpr;
+        const nw = 80; const nh = 80;
+        nextEl.style.width = nw + 'px';
+        nextEl.style.height = nh + 'px';
+        nextEl.width = nw * nDpr;
+        nextEl.height = nh * nDpr;
+        const nctxLocal = nextEl.getContext('2d');
+        nctxLocal.setTransform(nDpr,0,0,nDpr,0,0);
+      }
+    }
+    // prevent page scrolling on touch
+    document.addEventListener('touchmove', function(e){ e.preventDefault(); }, { passive: false });
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('orientationchange', ()=>setTimeout(resizeCanvas,120));
+    // initial resize will be run after next-canvas init
 
     const colors = [null,'#0ea5e9','#f97316','#a78bfa','#34d399','#f472b6','#fde047','#60a5fa'];
 
@@ -183,6 +220,8 @@
         }
       }
     }
+    // ensure canvas sizes match current viewport
+    resizeCanvas();
 
     function spawn(){
       // use nextPiece if present to make sequence predictable for preview
