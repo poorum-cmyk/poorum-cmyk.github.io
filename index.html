@@ -1,198 +1,506 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>모바일 테트리스</title>
-  <style>
-    :root{--bg:#071024;--panel:#0f1724;--accent:#06b6d4;--btn:#0ea5e9;--panel-width:160px}
-    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;background:linear-gradient(180deg,#071024,#07172b);color:#e6eef6;overflow:hidden;touch-action:none}
-    .wrap{width:100%;height:100vh;padding:12px;box-sizing:border-box;display:flex}
-    .game{display:flex;gap:12px;align-items:flex-start;flex:1}
-    .play-area{display:flex;flex-direction:column;align-items:center;gap:8px;position:relative}
-    canvas{background:linear-gradient(180deg,#0b3248,#07324a);border-radius:8px;box-shadow:0 8px 24px rgba(2,6,23,0.6);display:block}
-    .right-panel{width:var(--panel-width);min-width:var(--panel-width);background:var(--panel);border-radius:10px;padding:12px 10px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
-    .score{font-size:16px;font-weight:800;color:#34d399}
-    .info{font-size:13px;color:#9fb0c4;line-height:1.2}
-    .button-block{width:100%;display:flex;flex-direction:column;gap:4px;margin-top:0;align-items:center}
-    .controls-row{display:flex;align-items:center;justify-content:flex-start;gap:12px;width:100%}
-    .touch-btn{width:86px;height:86px;border-radius:14px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;border:1px solid rgba(255,255,255,0.04);box-shadow:0 6px 18px rgba(2,6,23,0.6);touch-action:manipulation}
-    .touch-btn.small{width:56px;height:56px;border-radius:10px;font-size:13px}
-    .joystick{width:120px;height:120px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;background:linear-gradient(180deg,#06566b,#0b6b86);border:2px solid rgba(255,255,255,0.04)}
-    .joystick .knob{width:48px;height:48px;border-radius:50%;background:#06b6d4;box-shadow:0 4px 12px rgba(6,182,212,0.2);transition:transform .06s linear;pointer-events:none}
-    .joystick .arrow{position:absolute;color:rgba(255,255,255,0.9);font-size:18px}
-    .joystick .arrow.left{left:12px;top:50%;transform:translateY(-50%)}
-    .joystick .arrow.right{right:12px;top:50%;transform:translateY(-50%)}
-    .joystick .arrow.down{bottom:12px;left:50%;transform:translateX(-50%)}
-    .play-btn{width:56px;height:56px;border-radius:10px;border:none;background:var(--btn);color:#042b3a;font-weight:800;display:flex;align-items:center;justify-content:center}
-    .rotate-btn{width:74px;height:74px;border-radius:10px;border:none;background:var(--btn);color:#042b3a;font-weight:800;display:flex;align-items:center;justify-content:center}
-    @media(min-width:900px){.wrap{padding:24px}.joystick{width:140px;height:140px}.joystick .knob{width:56px;height:56px}}
-    /* fixed joystick wrapper at bottom-left for mobile */
-    .joystick-wrapper{position:fixed;left:12px;bottom:12px;z-index:90}
-    /* make right-panel labels match vertical layout in mock */
-    .right-panel .info{line-height:1.2}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>모바일 테트리스</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #1a1a2e;
+            color: #ffffff;
+            font-family: 'Malgun Gothic', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        /* 게임 상단/메인 레이아웃 */
+        .game-container {
+            display: flex;
+            gap: 20px;
+            background: linear-gradient(180deg, #141e30, #243b55);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        /* 메인 게임 보드 */
+        #board {
+            border: 4px solid #00d2ff;
+            background-color: rgba(16, 24, 48, 0.8);
+            display: grid;
+            grid-template-rows: repeat(20, 1fr);
+            grid-template-columns: repeat(10, 1fr);
+            gap: 1px;
+            width: 240px;
+            height: 480px;
+        }
+        .cell {
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: 2px;
+        }
+        /* 우측 사이드바 캐비닛 */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 20px;
+            min-width: 100px;
+        }
+        .info-group {
+            font-size: 18px;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+        .info-value {
+            color: #00d2ff;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        /* 다음 조각 프리뷰 */
+        .next-container {
+            margin-top: 10px;
+        }
+        #next-preview {
+            width: 70px;
+            height: 70px;
+            background-color: #1f355a;
+            border: 2px solid #3a6073;
+            border-radius: 8px;
+            display: grid;
+            grid-template-rows: repeat(4, 1fr);
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            padding: 5px;
+        }
+        /* 컨트롤 버튼 메뉴 */
+        .menu-btn {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: left;
+            cursor: pointer;
+            padding: 5px 0;
+            outline: none;
+        }
+        .menu-btn:active {
+            color: #00d2ff;
+        }
+
+        /* 하단 모바일 컨트롤러 */
+        .controller {
+            margin-top: 25px;
+            width: 100%;
+            max-width: 360px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+        /* 조이스틱 스타일 (D-Pad 패드 대체) */
+        .joystick-area {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            background-color: #0f3047;
+            border-radius: 50%;
+            border: 3px solid #164e63;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        .stick-btn {
+            position: absolute;
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+            background: #134e4a;
+            border: none;
+            border-radius: 5px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .stick-btn:active { background: #0d9488; }
+        .btn-up { top: 5px; }
+        .btn-down { bottom: 5px; }
+        .btn-left { left: 5px; }
+        .btn-right { right: 5px; }
+        .stick-center {
+            width: 30px;
+            height: 30px;
+            background-color: #00d2ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #000;
+            font-weight: bold;
+        }
+
+        /* 회전 버튼 스타일 */
+        .rotate-btn {
+            width: 85px;
+            height: 85px;
+            background-color: #105670;
+            border: 3px solid #144d63;
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            cursor: pointer;
+        }
+        .rotate-btn:active {
+            background-color: #00d2ff;
+            color: #000000;
+        }
+
+        /* 블록 색상 정의 정의 */
+        .color-Z { background-color: #ef4444; box-shadow: inset 0 0 8px #b91c1c; } /* 빨강 */
+        .color-S { background-color: #22c55e; box-shadow: inset 0 0 8px #15803d; } /* 초록 */
+        .color-J { background-color: #3b82f6; box-shadow: inset 0 0 8px #1d4ed8; } /* 파랑 */
+        .color-L { background-color: #f97316; box-shadow: inset 0 0 8px #c2410c; } /* 주황 */
+        .color-T { background-color: #a855f7; box-shadow: inset 0 0 8px #7e22ce; } /* 보라 */
+        .color-O { background-color: #eab308; box-shadow: inset 0 0 8px #a16207; } /* 노랑 */
+        .color-I { background-color: #06b6d4; box-shadow: inset 0 0 8px #0e7490; } /* 하늘 */
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="game">
-      <div class="play-area" id="playArea">
-        <canvas id="playfield" width="300" height="600" role="img" aria-label="Tetris playfield"></canvas>
-        <div class="controls-row" id="controlsRow">
-          <div style="flex:1"></div>
+
+    <div class="game-container">
+        <div id="board"></div>
+
+        <div class="sidebar">
+            <div class="info-group">
+                스코어
+                <div class="info-value" id="score">0</div>
+                레벨
+                <div class="info-value" id="level">1</div>
+                라인
+                <div class="info-value" id="lines">0</div>
+            </div>
+
+            <div class="info-group next-container">
+                다음조각
+                <div id="next-preview"></div>
+            </div>
+
+            <button class="menu-btn" id="btn-start">시작</button>
+            <button class="menu-btn" id="btn-pause">일시정지</button>
         </div>
-      </div>
-      <div class="right-panel" id="rightPanel">
-        <div class="score">스코어: <span id="score">0</span></div>
-        <div class="info">다음 조각</div>
-        <canvas id="next" width="84" height="84" style="background:transparent;border-radius:8px"></canvas>
-        <div class="info">레벨: <span id="level">1</span></div>
-        <div class="info">라인: <span id="lines">0</span></div>
-        <div class="button-block">
-          <button id="startBtn" class="play-btn">시작</button>
-          <button id="pauseBtn" class="play-btn">일시정지</button>
-        </div>
-      </div>
-      <!-- rotate button will be positioned to align with joystick via JS -->
-      <div id="rotateWrapper" style="position:fixed;right:12px;z-index:80;top:calc(100% - 120px);">
-        <button id="rotateBtn" class="rotate-btn">회전</button>
-      </div>
-      <!-- fixed joystick wrapper (moved by script) -->
-      <div id="joystickWrapper" class="joystick-wrapper" aria-hidden="false"></div>
     </div>
-  </div>
 
-  <script>
-    // Minimal mobile-optimized Tetris
-    const canvas = document.getElementById('playfield');
-    const ctx = canvas.getContext('2d');
-    const nextCanvas = document.getElementById('next');
-    const nctx = nextCanvas.getContext('2d');
-    const joystick = document.getElementById('joystick');
-    const knob = joystick.querySelector('.knob');
-    // move joystick into fixed bottom-left wrapper for mobile layout
-    const joystickWrapper = document.getElementById('joystickWrapper');
-    if(joystickWrapper && joystick){ joystickWrapper.appendChild(joystick); }
-    const rotateBtn = document.getElementById('rotateBtn');
-    const rotateWrap = document.getElementById('rotateWrapper');
-    const startBtn = document.getElementById('startBtn');
-    const pauseBtn = document.getElementById('pauseBtn');
-    const scoreEl = document.getElementById('score');
-    const levelEl = document.getElementById('level');
-    const linesEl = document.getElementById('lines');
+    <div class="controller">
+        <div class="joystick-area">
+            <button class="stick-btn btn-up" id="ctrl-up">▲</button>
+            <button class="stick-btn btn-left" id="ctrl-left">◀</button>
+            <div class="stick-center">스틱</div>
+            <button class="stick-btn btn-right" id="ctrl-right">▶</button>
+            <button class="stick-btn btn-down" id="ctrl-down">▼</button>
+        </div>
 
-    const COLS = 10, ROWS = 20;
-    let BLOCK = 0;
-    let grid = createMatrix(COLS, ROWS);
-    let current = null, nextPiece = null;
-    let dropInterval = 800, dropTimer = 0, lastTime = 0, running=false;
-    let score=0, level=1, lines=0;
+        <button class="rotate-btn" id="ctrl-rotate">회전</button>
+    </div>
 
-    const colors = [null,'#0ea5e9','#f97316','#a78bfa','#34d399','#f472b6','#fde047','#60a5fa'];
-    const pieces = {
-      I:[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
-      J:[[2,0,0],[2,2,2],[0,0,0]],
-      L:[[0,0,3],[3,3,3],[0,0,0]],
-      O:[[4,4],[4,4]],
-      S:[[0,5,5],[5,5,0],[0,0,0]],
-      T:[[0,6,0],[6,6,6],[0,0,0]],
-      Z:[[7,7,0],[0,7,7],[0,0,0]]
-    };
+    <script>
+        // 1. 게임 구성 변수 및 기본 데이터 상수 정의
+        const BOARD_WIDTH = 10;
+        const BOARD_HEIGHT = 20;
+        let board = Array.from({ length: BOARD_HEIGHT }, () => Array(BOARD_WIDTH).fill(0));
+        
+        let score = 0;
+        let level = 1;
+        let lines = 0;
+        let gameOver = false;
+        let isPaused = false;
+        let gameInterval;
+        let dropStart = Date.now();
 
-    function createMatrix(w,h){ const m=[]; for(let y=0;y<h;y++) m.push(new Array(w).fill(0)); return m; }
+        // 테트리미노 블록 조합 정보
+        const SHAPES = {
+            'I': [[1,1,1,1]],
+            'O': [[1,1],[1,1]],
+            'T': [[0,1,0],[1,1,1]],
+            'S': [[0,1,1],[1,1,0]],
+            'Z': [[1,1,0],[0,1,1]],
+            'J': [[1,0,0],[1,1,1]],
+            'L': [[0,0,1],[1,1,1]]
+        };
+        const COLORS = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
 
-    function resize(){
-      const dpr = window.devicePixelRatio || 1;
-      const availW = window.innerWidth; const availH = window.innerHeight;
-      const panelWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--panel-width'))||160;
-      let cssWidth = Math.min(Math.floor(availW - panelWidth - 36), Math.floor(availH * 0.6));
-      cssWidth = Math.max(260, cssWidth);
-      const cssHeight = Math.floor(cssWidth * 2);
-      canvas.style.width = cssWidth + 'px'; canvas.style.height = cssHeight + 'px';
-      canvas.width = Math.floor(cssWidth * dpr); canvas.height = Math.floor(cssHeight * dpr);
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-      BLOCK = Math.floor(cssWidth / COLS);
-      // next preview
-      const nw = 84, nh = 84; nextCanvas.style.width = nw + 'px'; nextCanvas.style.height = nh + 'px'; nextCanvas.width = nw * dpr; nextCanvas.height = nh * dpr; nctx.setTransform(dpr,0,0,dpr,0,0);
-      // set controlsRow width (kept for alignment under playfield if needed)
-      const controlsRow = document.getElementById('controlsRow'); if(controlsRow) controlsRow.style.width = cssWidth + 'px';
-      // align rotate button vertically to joystick center
-      const jrect = joystick.getBoundingClientRect(); if(jrect && rotateWrap){ const wrapH = rotateWrap.offsetHeight || 74; rotateWrap.style.top = Math.round(jrect.top + (jrect.height - wrapH)/2) + 'px'; }
-      drawNext(); draw();
-    }
-    window.addEventListener('resize', ()=>setTimeout(resize,40)); window.addEventListener('orientationchange', ()=>setTimeout(resize,120));
-    document.addEventListener('touchmove', e=>{e.preventDefault();},{passive:false});
+        let currentPiece = getRandomPiece();
+        let nextPiece = getRandomPiece();
 
-    function draw(){
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      for(let y=0;y<ROWS;y++){
-        for(let x=0;x<COLS;x++){
-          ctx.fillStyle = '#0f4354'; ctx.fillRect(x*BLOCK,y*BLOCK,BLOCK,BLOCK);
-          ctx.strokeStyle = 'rgba(3,30,38,0.85)'; ctx.lineWidth=1; ctx.strokeRect(x*BLOCK+0.5,y*BLOCK+0.5,BLOCK-1,BLOCK-1);
-          const v = grid[y][x]; if(v){ ctx.fillStyle = colors[v]; ctx.fillRect(x*BLOCK+2,y*BLOCK+2,Math.max(1,BLOCK-4),Math.max(1,BLOCK-4)); }
+        // 2. DOM 초기화 및 드로잉 엔진 생성
+        const boardEl = document.getElementById('board');
+        const nextEl = document.getElementById('next-preview');
+        
+        // 보드판 타일 생성
+        for (let i = 0; i < BOARD_HEIGHT * BOARD_WIDTH; i++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            boardEl.appendChild(cell);
         }
-      }
-      if(current) drawMatrix(current.matrix,current.pos);
-    }
-    function drawMatrix(matrix,offset){ for(let y=0;y<matrix.length;y++){ for(let x=0;x<matrix[y].length;x++){ const v=matrix[y][x]; if(v){ ctx.fillStyle=colors[v]; ctx.fillRect((offset.x+x)*BLOCK+2,(offset.y+y)*BLOCK+2,BLOCK-4,BLOCK-4); } } } }
+        const cells = document.querySelectorAll('#board .cell');
 
-    function rotate(m,dir){ for(let y=0;y<m.length;y++) for(let x=0;x<y;x++) [m[x][y],m[y][x]]=[m[y][x],m[x][y]]; if(dir>0) m.forEach(r=>r.reverse()); else m.reverse(); }
-    function collide(matrix,offset){ for(let y=0;y<matrix.length;y++) for(let x=0;x<matrix[y].length;x++) if(matrix[y][x] && (grid[offset.y+y] && grid[offset.y+y][offset.x+x])!==0) return true; return false; }
-    function merge(matrix,offset){ for(let y=0;y<matrix.length;y++) for(let x=0;x<matrix[y].length;x++) if(matrix[y][x]) grid[offset.y+y][offset.x+x]=matrix[y][x]; }
-    function randomPiece(){ const keys=Object.keys(pieces); const t=keys[Math.floor(Math.random()*keys.length)]; const m=pieces[t].map(r=>r.slice()); return {type:t,matrix:m,pos:{x:Math.floor((COLS-m[0].length)/2),y:0}} }
+        // 넥스트 프리뷰 타일 생성
+        for (let i = 0; i < 16; i++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            nextEl.appendChild(cell);
+        }
+        const nextCells = document.querySelectorAll('#next-preview .cell');
 
-    function drawNext(){ if(!nextPiece) return; nctx.clearRect(0,0,nextCanvas.width,nextCanvas.height); const cssW=nextCanvas.clientWidth, cssH=nextCanvas.clientHeight; const mat=nextPiece.matrix; const size=Math.floor(Math.min(cssW/mat[0].length, cssH/mat.length)); const offX=Math.floor((cssW-mat[0].length*size)/2); const offY=Math.floor((cssH-mat.length*size)/2); for(let y=0;y<mat.length;y++) for(let x=0;x<mat[y].length;x++){ const v=mat[y][x]; if(v){ nctx.fillStyle=colors[v]; nctx.fillRect((offX+x*size)+2,(offY+y*size)+2,Math.max(1,size-4),Math.max(1,size-4)); } } }
+        function getRandomPiece() {
+            const type = COLORS[Math.floor(Math.random() * COLORS.length)];
+            return {
+                type: type,
+                matrix: SHAPES[type],
+                x: Math.floor((BOARD_WIDTH - SHAPES[type][0].length) / 2),
+                y: 0
+            };
+        }
 
-    function spawn(){ if(!nextPiece) nextPiece=randomPiece(); current={matrix:nextPiece.matrix.map(r=>r.slice()),pos:{x:nextPiece.pos.x,y:nextPiece.pos.y}}; nextPiece=randomPiece(); drawNext(); if(collide(current.matrix,current.pos)){ running=false; stopBGM(); alert('게임 종료\n스코어: '+score); } }
+        // 3. 렌더링 함수 코어
+        function draw() {
+            // 보드판 청소
+            cells.forEach(cell => {
+                cell.className = 'cell';
+            });
 
-    function sweep(){ let rc=0; outer: for(let y=ROWS-1;y>=0;y--){ for(let x=0;x<COLS;x++) if(grid[y][x]===0) continue outer; const row=grid.splice(y,1)[0].fill(0); grid.unshift(row); y++; rc++; } if(rc>0){ lines+=rc; score+=rc*100*level; level=1+Math.floor(lines/10); dropInterval=Math.max(100,800-(level-1)*60); updateScoreDisplays(); playSound('clear'); } }
-    function hardDrop(){ while(!collide(current.matrix,{x:current.pos.x,y:current.pos.y+1})) current.pos.y++; merge(current.matrix,current.pos); playSound('drop'); sweep(); spawn(); }
-    function playerMove(dir){ current.pos.x+=dir; if(collide(current.matrix,current.pos)) current.pos.x-=dir; }
-    function playerDrop(){ current.pos.y++; if(collide(current.matrix,current.pos)){ current.pos.y--; merge(current.matrix,current.pos); sweep(); spawn(); } dropTimer=0; }
-    function playerRotate(dir, playSoundFlag=true){ rotate(current.matrix,dir); let offset=1; while(collide(current.matrix,current.pos)){ current.pos.x+=offset; offset=-(offset+(offset>0?1:-1)); if(offset>current.matrix[0].length){ rotate(current.matrix,-dir); return; } } if(playSoundFlag) playSound('rotate'); }
+            // 바닥에 쌓인 고정 블록 그리기
+            for (let r = 0; r < BOARD_HEIGHT; r++) {
+                for (let c = 0; c < BOARD_WIDTH; c++) {
+                    if (board[r][c]) {
+                        cells[r * BOARD_WIDTH + c].classList.add(`color-${board[r][c]}`);
+                    }
+                }
+            }
 
-    function update(t=0){ const delta=t-lastTime; lastTime=t; dropTimer+=delta; if(running && dropTimer>dropInterval){ playerDrop(); dropTimer=0; } draw(); scoreEl.textContent=score; requestAnimationFrame(update); }
+            // 현재 움직이는 블록 그리기
+            if (currentPiece) {
+                currentPiece.matrix.forEach((row, r) => {
+                    row.forEach((val, c) => {
+                        if (val) {
+                            let currY = currentPiece.y + r;
+                            let currX = currentPiece.x + c;
+                            if (currY >= 0 && currY < BOARD_HEIGHT && currX >= 0 && currX < BOARD_WIDTH) {
+                                cells[currY * BOARD_WIDTH + currX].classList.add(`color-${currentPiece.type}`);
+                            }
+                        }
+                    });
+                });
+            }
 
-    // input
-    document.addEventListener('keydown', e=>{ if(!current) return; if(e.key==='ArrowLeft') playerMove(-1); if(e.key==='ArrowRight') playerMove(1); if(e.key==='ArrowDown') playerDrop(); if(e.key==='ArrowUp') playerRotate(1); });
+            // 우측의 Next 블록 프리뷰 드로잉
+            nextCells.forEach(cell => cell.className = 'cell');
+            nextPiece.matrix.forEach((row, r) => {
+                row.forEach((val, c) => {
+                    if (val) {
+                        nextCells[r * 4 + c].classList.add(`color-${nextPiece.type}`);
+                    }
+                });
+            });
 
-    // joystick handling
-    let pointerId=null, moveInterval=null, downInterval=null, activeDir=null; const JOY_THRESHOLD=18, JOY_MAX=40;
-    function setKnob(dx,dy){ const cx=Math.max(-JOY_MAX,Math.min(JOY_MAX,dx)); const cy=Math.max(-JOY_MAX,Math.min(JOY_MAX,dy)); knob.style.transform=`translate(${cx}px, ${cy}px)`; }
-    function resetKnob(){ knob.style.transform='translate(0,0)'; }
-    joystick.addEventListener('pointerdown', e=>{ e.preventDefault(); joystick.setPointerCapture(e.pointerId); pointerId=e.pointerId; });
-    joystick.addEventListener('pointermove', e=>{ if(pointerId!==e.pointerId) return; const r=joystick.getBoundingClientRect(); const cx=r.left+r.width/2; const cy=r.top+r.height/2; const dx=e.clientX-cx, dy=e.clientY-cy; setKnob(dx,dy); const adx=Math.abs(dx), ady=Math.abs(dy); if(adx>ady && adx>JOY_THRESHOLD){ if(dx<0) startMoveHold(-1); else startMoveHold(1); } else if(dy>JOY_THRESHOLD){ startDownHold(); } else stopAllHolds(); });
-    joystick.addEventListener('pointerup', e=>{ if(pointerId!==e.pointerId) return; joystick.releasePointerCapture(e.pointerId); pointerId=null; resetKnob(); stopAllHolds(); });
-    joystick.addEventListener('pointercancel', e=>{ if(pointerId===e.pointerId){ joystick.releasePointerCapture(e.pointerId); pointerId=null; resetKnob(); stopAllHolds(); } });
-    function startMoveHold(dir){ if(activeDir===dir) return; stopAllHolds(); activeDir=dir; playerMove(dir); moveInterval=setInterval(()=>playerMove(dir),120); }
-    function stopMoveHold(){ if(moveInterval){ clearInterval(moveInterval); moveInterval=null; } if(activeDir===-1||activeDir===1) activeDir=null; }
-    function startDownHold(){ if(activeDir==='down') return; stopAllHolds(); activeDir='down'; playerDrop(); downInterval=setInterval(()=>playerDrop(),120); }
-    function stopDownHold(){ if(downInterval){ clearInterval(downInterval); downInterval=null; } if(activeDir==='down') activeDir=null; }
-    function stopAllHolds(){ stopMoveHold(); stopDownHold(); }
+            // 스코어 패널 동기화
+            document.getElementById('score').innerText = score;
+            document.getElementById('level').innerText = level;
+            document.getElementById('lines').innerText = lines;
+        }
 
-    // rotate button events
-    if(rotateBtn){ rotateBtn.addEventListener('pointerdown', e=>{ e.preventDefault(); playerRotate(1,false); }); rotateBtn.addEventListener('click', e=>{ e.preventDefault(); playerRotate(1,false); }); rotateBtn.addEventListener('touchstart', e=>{ e.preventDefault(); playerRotate(1,false); },{passive:false}); rotateBtn.style.touchAction='manipulation'; }
+        // 4. 충돌 체크 및 충돌 감지 로직
+        function collide(piece, offsetRow = 0, offsetCol = 0, newMatrix = null) {
+            const matrix = newMatrix || piece.matrix;
+            for (let r = 0; r < matrix.length; r++) {
+                for (let c = 0; c < matrix[r].length; c++) {
+                    if (matrix[r][c]) {
+                        let nextY = piece.y + r + offsetRow;
+                        let nextX = piece.x + c + offsetCol;
+                        
+                        if (nextX < 0 || nextX >= BOARD_WIDTH || nextY >= BOARD_HEIGHT) {
+                            return true;
+                        }
+                        if (nextY >= 0 && board[nextY][nextX]) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
 
-    // start/pause handlers (robust)
-    function handleStart(){ if(!running){ grid=createMatrix(COLS,ROWS); score=0; lines=0; level=1; dropInterval=800; updateScoreDisplays(); nextPiece=randomPiece(); drawNext(); spawn(); running=true; lastTime=0; dropTimer=0; requestAnimationFrame(update); startBGM(); } }
-    function handlePause(){ running=!running; pauseBtn.textContent=running? '일시정지':'재개'; if(running) startBGM(); else stopBGM(); }
-    ['pointerdown','click','touchstart'].forEach(ev=>{ startBtn.addEventListener(ev,e=>{ e.preventDefault(); handleStart(); },{passive:false}); pauseBtn.addEventListener(ev,e=>{ e.preventDefault(); handlePause(); },{passive:false}); });
+        // 블록 바닥 고정 및 라인 클리어 계산
+        function lockPiece() {
+            currentPiece.matrix.forEach((row, r) => {
+                row.forEach((val, c) => {
+                    if (val) {
+                        if (currentPiece.y + r < 0) {
+                            gameOver = true;
+                            alert("게임 오버! 다시 시작하려면 시작 버튼을 누르세요.");
+                            clearInterval(gameInterval);
+                            return;
+                        }
+                        board[currentPiece.y + r][currentPiece.x + c] = currentPiece.type;
+                    }
+                });
+            });
 
-    function updateScoreDisplays(){ scoreEl.textContent=score; levelEl.textContent=level; linesEl.textContent=lines; }
+            if (gameOver) return;
 
-    // audio
-    const AudioCtx = window.AudioContext || window.webkitAudioContext; let audioCtx=null;
-    function ensureAudio(){ if(!audioCtx) audioCtx=new AudioCtx(); }
-    function playTone(freq,time=0.08,type='sine',gain=0.06){ try{ ensureAudio(); const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type=type; o.frequency.value=freq; g.gain.value=gain; o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+time); }catch(e){} }
-    function playSound(name){ if(!audioCtx && !('AudioContext' in window || 'webkitAudioContext' in window)) return; switch(name){ case 'rotate': playTone(700,0.06,'sawtooth',0.06); break; case 'drop': playTone(300,0.12,'square',0.08); break; case 'clear': playTone(900,0.06,'sine',0.08); setTimeout(()=>playTone(1100,0.06,'sine',0.06),80); break; case 'gameover': playTone(180,0.5,'sine',0.12); break; } }
-    let bgmInterval=null,bgmTimers=[]; function startBGM(){ try{ ensureAudio(); if(audioCtx.state==='suspended') audioCtx.resume(); if(bgmInterval) return; const g=audioCtx.createGain(); g.gain.value=0.04; g.connect(audioCtx.destination); const seq=[[659.25,180],[622.25,180],[587.33,360],[523.25,360],[587.33,180],[622.25,180],[659.25,360]]; let i=0; function step(){ const note=seq[i%seq.length]; const o=audioCtx.createOscillator(); const gg=audioCtx.createGain(); o.type='square'; o.frequency.value=note[0]; gg.gain.value=0.0001; o.connect(gg); gg.connect(g); const now=audioCtx.currentTime; gg.gain.setValueAtTime(0.0001,now); gg.gain.exponentialRampToValueAtTime(0.08,now+0.02); o.start(now); gg.gain.exponentialRampToValueAtTime(0.0001,now+note[1]/1000-0.02); const to=setTimeout(()=>{ try{ o.stop(); o.disconnect(); gg.disconnect(); }catch(e){} },note[1]); bgmTimers.push(to); i++; }
-      step(); bgmInterval=setInterval(step,1200);
-    }catch(e){} }
-    function stopBGM(){ if(bgmInterval){ clearInterval(bgmInterval); bgmInterval=null; } while(bgmTimers.length){ clearTimeout(bgmTimers.pop()); } }
+            // 완성된 줄 삭제 처리
+            let linesCleared = 0;
+            for (let r = BOARD_HEIGHT - 1; r >= 0; r--) {
+                if (board[r].every(val => val !== 0)) {
+                    board.splice(r, 1);
+                    board.unshift(Array(BOARD_WIDTH).fill(0));
+                    linesCleared++;
+                    r++; // 삭제 후 윗줄이 내려오므로 다시 해당 줄 검사
+                }
+            }
 
-    // initial setup
-    resize();
+            if (linesCleared > 0) {
+                lines += linesCleared;
+                score += linesCleared * 100 * level;
+                level = Math.floor(lines / 10) + 1;
+            }
 
-  </script>
+            // 다음 조각 전환
+            currentPiece = nextPiece;
+            nextPiece = getRandomPiece();
+
+            // 생성되자마자 충돌하면 게임오버
+            if (collide(currentPiece)) {
+                gameOver = true;
+                alert("게임 오버!");
+                clearInterval(gameInterval);
+            }
+        }
+
+        // 5. 블록 제어 액션
+        function moveLeft() {
+            if (!collide(currentPiece, 0, -1)) currentPiece.x--;
+            draw();
+        }
+
+        function moveRight() {
+            if (!collide(currentPiece, 0, 1)) currentPiece.x++;
+            draw();
+        }
+
+        function moveDown() {
+            if (collide(currentPiece, 1, 0)) {
+                lockPiece();
+            } else {
+                currentPiece.y++;
+            }
+            draw();
+        }
+
+        function hardDrop() {
+            while (!collide(currentPiece, 1, 0)) {
+                currentPiece.y++;
+            }
+            lockPiece();
+            draw();
+        }
+
+        function rotate() {
+            // 행렬 회전 (시계방향 90도)
+            const n = currentPiece.matrix.length;
+            const m = currentPiece.matrix[0].length;
+            let newMatrix = Array.from({ length: m }, () => Array(n).fill(0));
+            
+            for (let r = 0; r < n; r++) {
+                for (let c = 0; c < m; c++) {
+                    newMatrix[c][n - 1 - r] = currentPiece.matrix[r][c];
+                }
+            }
+
+            // 회전 시 벽 내부나 블록에 겹치는 경우 예외 보정(Wall Kick 기초)
+            let originX = currentPiece.x;
+            let offset = 0;
+            if (collide(currentPiece, 0, 0, newMatrix)) {
+                // 우측 벽에 부딪치면 왼쪽 이동 후 시도
+                if (currentPiece.x + newMatrix[0].length > BOARD_WIDTH) {
+                    currentPiece.x = BOARD_WIDTH - newMatrix[0].length;
+                }
+                // 좌측 벽에 부딪치면 우측 이동 후 시도
+                if (currentPiece.x < 0) currentPiece.x = 0;
+            }
+
+            if (!collide(currentPiece, 0, 0, newMatrix)) {
+                currentPiece.matrix = newMatrix;
+            } else {
+                currentPiece.x = originX; // 보정 실패 시 원상복구
+            }
+            draw();
+        }
+
+        // 6. 타이머 루프 및 인터벌 속도 제어
+        function update() {
+            if (gameOver || isPaused) return;
+            moveDown();
+        }
+
+        function startGame() {
+            clearInterval(gameInterval);
+            board = Array.from({ length: BOARD_HEIGHT }, () => Array(BOARD_WIDTH).fill(0));
+            score = 0;
+            level = 1;
+            lines = 0;
+            gameOver = false;
+            isPaused = false;
+            currentPiece = getRandomPiece();
+            nextPiece = getRandomPiece();
+            draw();
+            gameInterval = setInterval(update, Math.max(100, 800 - (level * 50)));
+        }
+
+        // 7. 모바일 버튼 이벤트 바인딩 (터치 대응)
+        document.getElementById('btn-start').addEventListener('click', startGame);
+        document.getElementById('btn-pause').addEventListener('click', () => {
+            if (gameOver) return;
+            isPaused = !isPaused;
+            document.getElementById('btn-pause').innerText = isPaused ? "계속하기" : "일시정지";
+        });
+
+        // 모바일 가상 컨트롤 바인딩
+        document.getElementById('ctrl-left').addEventListener('click', (e) => { e.preventDefault(); if(!gameOver && !isPaused) moveLeft(); });
+        document.getElementById('ctrl-right').addEventListener('click', (e) => { e.preventDefault(); if(!gameOver && !isPaused) moveRight(); });
+        document.getElementById('ctrl-down').addEventListener('click', (e) => { e.preventDefault(); if(!gameOver && !isPaused) moveDown(); });
+        document.getElementById('ctrl-up').addEventListener('click', (e) => { e.preventDefault(); if(!gameOver && !isPaused) hardDrop(); });
+        document.getElementById('ctrl-rotate').addEventListener('click', (e) => { e.preventDefault(); if(!gameOver && !isPaused) rotate(); });
+
+        // PC 테스트 환경 보조용 키보드 매핑
+        document.addEventListener('keydown', event => {
+            if (gameOver || isPaused) return;
+            if (event.keyCode === 37) moveLeft();       // Left Arrow
+            else if (event.keyCode === 39) moveRight(); // Right Arrow
+            else if (event.keyCode === 40) moveDown();  // Down Arrow
+            else if (event.keyCode === 38) rotate();    // Up Arrow
+            else if (event.keyCode === 32) hardDrop();  // Spacebar
+        });
+
+        // 초기 화면 드로우
+        draw();
+    </script>
 </body>
 </html>
