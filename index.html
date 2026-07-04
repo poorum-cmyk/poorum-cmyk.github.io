@@ -3,21 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>모바일 테트리스</title>
+    <title>모바일 테트리스 - UI 개선판</title>
     <style>
         :root {
-            --bg-color: #0b091a;
-            --panel-bg: #161230;
-            --accent-blue: #115372;
+            --bg-color: #0b071e;
+            --panel-bg: #121026;
+            --btn-blue: #155273;
+            --btn-blue-active: #1c6d99;
             --text-color: #ffffff;
-            --board-border: #2a245a;
+            --board-border: #42387a;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
             font-family: 'Malgun Gothic', sans-serif;
-            margin: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -27,125 +35,162 @@
             touch-action: none;
         }
 
-        /* 메인 컨테이너 */
+        /* 메인 게임 상단 레이아웃 */
         #game-wrapper {
             display: flex;
-            gap: 15px;
+            gap: 20px;
             padding: 10px;
+            background: linear-gradient(180deg, #100a2b, #19143d);
+            border-radius: 12px;
+            box-shadow: 0 12px 36px rgba(0,0,0,0.7);
         }
 
-        /* 게임 보드 */
+        /* 게임 보드 보정 */
         #board-container {
-            position: relative;
             border: 4px solid var(--board-border);
-            background-image: linear-gradient(to right, #ffffff05 1px, transparent 1px),
-                              linear-gradient(to bottom, #ffffff05 1px, transparent 1px);
-            background-size: 24px 24px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            border-radius: 4px;
+            background-color: rgba(10, 5, 25, 0.85);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
         }
 
         canvas {
             display: block;
         }
 
-        /* 우측 사이드바 */
+        /* 우측 상태창 및 정형화된 사각형 버튼 메뉴 */
         #sidebar {
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
-            min-width: 100px;
-            gap: 15px;
+            min-width: 110px;
+            gap: 12px;
         }
 
-        .info-label { font-size: 18px; margin-bottom: 2px; }
-        .info-value { font-size: 16px; margin-bottom: 10px; color: #aaa; }
+        .info-box {
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+
+        .info-value {
+            font-size: 15px;
+            color: #ffcc00; /* 스코어 강조 */
+            margin-bottom: 8px;
+            font-family: monospace;
+        }
 
         #next-preview {
-            width: 80px;
-            height: 80px;
-            background-color: #1a1a3a;
-            border: 2px solid #2a2a5a;
-            border-radius: 5px;
+            width: 75px;
+            height: 75px;
+            background-color: #0d0921;
+            border: 2px solid #282154;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
+            margin-bottom: 15px;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.6);
         }
 
+        /* 사각형 형태의 매끄러운 메뉴 버튼 */
         .menu-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 22px;
-            text-align: left;
+            background-color: var(--btn-blue);
+            border: 2px solid #0b3147;
+            color: var(--text-color);
+            font-size: 15px;
+            font-weight: bold;
+            padding: 12px 10px;
+            text-align: center;
+            border-radius: 4px;
             cursor: pointer;
-            padding: 5px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: background 0.1s;
         }
 
-        /* 하단 컨트롤러 */
+        .menu-btn:active {
+            background-color: var(--btn-blue-active);
+        }
+
+        /* 하단 모바일 컨트롤러 팩 */
         #controls {
-            margin-top: 30px;
+            margin-top: 35px;
             display: flex;
-            justify-content: space-around;
+            justify-content: space-between;
+            align-items: center;
             width: 100%;
-            max-width: 400px;
+            max-width: 340px;
+            padding: 0 10px;
         }
 
-        /* 조이스틱 (스틱) */
+        /* 방향 가이드가 포함된 고도화된 스틱 패드 */
         #joystick-zone {
-            width: 100px;
-            height: 100px;
-            background-color: #0d4a63;
-            border: 4px solid #083142;
+            width: 110px;
+            height: 110px;
+            background-color: #0c2336;
+            border: 4px solid #081624;
             border-radius: 50%;
+            position: relative;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.6), 0 6px 12px rgba(0,0,0,0.4);
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
         }
 
-        #joystick-zone::after {
-            content: "스틱";
-            color: white;
-            font-size: 14px;
+        /* 내부에 내장된 방향 화살표 가이드 인디케이터 */
+        .joy-arrow {
+            position: absolute;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.25);
+            font-weight: bold;
         }
+        .arrow-up { top: 8px; }
+        .arrow-down { bottom: 8px; }
+        .arrow-left { left: 8px; }
+        .arrow-right { right: 8px; }
 
+        /* 터치 시 기준좌표 추적하여 이동하는 스틱 물리 놉 */
         #stick-knob {
-            width: 40px;
-            height: 40px;
-            background-color: #1a7fa0;
+            width: 46px;
+            height: 46px;
+            background: radial-gradient(circle, #1a648c 0%, #0c334a 100%);
+            border: 2px solid #2983b5;
             border-radius: 50%;
             position: absolute;
-            transition: 0.1s;
-            pointer-events: none;
-            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #00f0f0;
+            text-shadow: 0 0 4px rgba(0,0,0,0.8);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            transition: transform 0.05s ease-out;
+            z-index: 2;
         }
 
-        /* 회전 버튼 */
+        /* 회전 사각형 제어 버튼 */
         #rotate-btn {
-            width: 100px;
-            height: 100px;
-            background-color: #115372;
-            border: 3px solid #083142;
-            color: white;
+            width: 90px;
+            height: 90px;
+            background-color: var(--btn-blue);
+            border: 3px solid #0a2d40;
+            color: var(--text-color);
             font-size: 18px;
             font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
+            border-radius: 4px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
             cursor: pointer;
+            transition: background 0.1s;
         }
 
-        #rotate-btn:active { background-color: #1a7fa0; }
-
-        /* 블록 색상 */
-        .color-I { background: #00f0f0; }
-        .color-J { background: #0000f0; }
-        .color-L { background: #f0a000; }
-        .color-O { background: #f0f000; }
-        .color-S { background: #00f000; }
-        .color-T { background: #a000f0; }
-        .color-Z { background: #f00000; }
+        #rotate-btn:active {
+            background-color: var(--btn-blue-active);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
     </style>
 </head>
 <body>
@@ -156,16 +201,16 @@
         </div>
 
         <div id="sidebar">
-            <div class="info-label">스코어</div>
+            <div class="info-box">스크어</div>
             <div class="info-value" id="score">0</div>
             
-            <div class="info-label">레벨</div>
+            <div class="info-box">레벨</div>
             <div class="info-value" id="level">1</div>
             
-            <div class="info-label">라인</div>
+            <div class="info-box">라인</div>
             <div class="info-value" id="line">0</div>
 
-            <div class="info-label">다음조각</div>
+            <div class="info-box">다음조각</div>
             <div id="next-preview">
                 <canvas id="next" width="60" height="60"></canvas>
             </div>
@@ -177,7 +222,11 @@
 
     <div id="controls">
         <div id="joystick-zone">
-            <div id="stick-knob" style="display: none;"></div>
+            <div class="joy-arrow arrow-up">▲</div>
+            <div class="joy-arrow arrow-down">▼</div>
+            <div class="joy-arrow arrow-left">◀</div>
+            <div class="joy-arrow arrow-right">▶</div>
+            <div id="stick-knob">스틱</div>
         </div>
         <div id="rotate-btn">회전</div>
     </div>
@@ -191,83 +240,46 @@
         context.scale(24, 24);
         nextContext.scale(15, 15);
 
-        // 블록 설정
+        // 7가지 테트리스 블록 데이터 구성 (완벽한 4칸 막대 I형 포함)
         function createPiece(type) {
-            if (type === 'I') {
-                return [
-                    [0, 1, 0, 0],
-                    [0, 1, 0, 0],
-                    [0, 1, 0, 0],
-                    [0, 1, 0, 0],
-                ];
-            } else if (type === 'L') {
-                return [
-                    [0, 2, 0],
-                    [0, 2, 0],
-                    [0, 2, 2],
-                ];
-            } else if (type === 'J') {
-                return [
-                    [0, 3, 0],
-                    [0, 3, 0],
-                    [3, 3, 0],
-                ];
-            } else if (type === 'O') {
-                return [
-                    [4, 4],
-                    [4, 4],
-                ];
-            } else if (type === 'Z') {
-                return [
-                    [5, 5, 0],
-                    [0, 5, 5],
-                    [0, 0, 0],
-                ];
-            } else if (type === 'S') {
-                return [
-                    [0, 6, 6],
-                    [6, 6, 0],
-                    [0, 0, 0],
-                ];
-            } else if (type === 'T') {
-                return [
-                    [0, 7, 0],
-                    [7, 7, 7],
-                    [0, 0, 0],
-                ];
+            switch(type) {
+                case 'I': return [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]];
+                case 'L': return [[0,2,0],[0,2,0],[0,2,2]];
+                case 'J': return [[0,3,0],[0,3,0],[3,3,0]];
+                case 'O': return [[4,4],[4,4]];
+                case 'Z': return [[5,5,0],[0,5,5],[0,0,0]];
+                case 'S': return [[0,6,6],[6,6,0],[0,0,0]];
+                case 'T': return [[0,7,0],[7,7,7],[0,0,0]];
             }
         }
 
+        // 이미지 매칭 블록 컬러칩 파트
         const colors = [
             null,
-            '#00f0f0', // I
-            '#f0a000', // L
-            '#0000f0', // J
-            '#f0f000', // O
-            '#f00000', // Z
-            '#00f000', // S
-            '#a000f0', // T
+            '#00d2ff', // I (하늘색)
+            '#f97316', // L (주황색)
+            '#3b82f6', // J (파란색)
+            '#eab308', // O (노란색)
+            '#ef4444', // Z (빨간색)
+            '#22c55e', // S (초록색)
+            '#a855f7'  // T (보라색)
         ];
 
-        // 보드 생성
         function createMatrix(w, h) {
             const matrix = [];
-            while (h--) {
-                matrix.push(new Array(w).fill(0));
-            }
+            while (h--) { matrix.push(new Array(w).fill(0)); }
             return matrix;
         }
 
-        // 블록 그리기
         function drawMatrix(matrix, offset, ctx) {
             matrix.forEach((row, y) => {
                 row.forEach((value, x) => {
                     if (value !== 0) {
                         ctx.fillStyle = colors[value];
-                        // 입체감 있는 블록 디자인
                         ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
-                        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-                        ctx.lineWidth = 0.05;
+                        // 블록 테두리 드로잉으로 시각 효과 극대화
+                        ctx.strokeStyle = '#0b071e';
+                        ctx.lineWidth = 0.06;
                         ctx.strokeRect(x + offset.x, y + offset.y, 1, 1);
                     }
                 });
@@ -275,20 +287,23 @@
         }
 
         function draw() {
-            context.fillStyle = '#0b091a';
+            context.fillStyle = '#0b071e';
             context.fillRect(0, 0, canvas.width, canvas.height);
-
             drawMatrix(arena, {x: 0, y: 0}, context);
-            drawMatrix(player.matrix, player.pos, context);
+            if(player.matrix) drawMatrix(player.matrix, player.pos, context);
         }
 
         function drawNext() {
-            nextContext.fillStyle = '#1a1a3a';
+            nextContext.fillStyle = '#0d0921';
             nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
-            drawMatrix(player.next, {x: 1, y: 1}, nextContext);
+            if(player.next) {
+                // 프리뷰 중앙 정렬 가중치 보정
+                const nX = player.next.length === 4 ? 0 : 0.5;
+                const nY = player.next.length === 2 ? 1 : 0.5;
+                drawMatrix(player.next, {x: nX, y: nY}, nextContext);
+            }
         }
 
-        // 충돌 감지
         function collide(arena, player) {
             const [m, o] = [player.matrix, player.pos];
             for (let y = 0; y < m.length; ++y) {
@@ -302,7 +317,6 @@
             return false;
         }
 
-        // 아레나에 블록 병합
         function merge(arena, player) {
             player.matrix.forEach((row, y) => {
                 row.forEach((value, x) => {
@@ -313,20 +327,17 @@
             });
         }
 
-        // 라인 제거
         function arenaSweep() {
             let rowCount = 1;
             outer: for (let y = arena.length - 1; y > 0; --y) {
                 for (let x = 0; x < arena[y].length; ++x) {
-                    if (arena[y][x] === 0) {
-                        continue outer;
-                    }
+                    if (arena[y][x] === 0) continue outer;
                 }
                 const row = arena.splice(y, 1)[0].fill(0);
                 arena.unshift(row);
                 ++y;
 
-                player.score += rowCount * 10;
+                player.score += rowCount * 100;
                 player.lines += 1;
                 rowCount *= 2;
             }
@@ -338,28 +349,18 @@
             document.getElementById('line').innerText = player.lines;
             player.level = Math.floor(player.lines / 10) + 1;
             document.getElementById('level').innerText = player.level;
-            // 레벨에 따른 속도 조절
-            dropInterval = Math.max(100, 1000 - (player.level - 1) * 100);
+            // 자동 하강 속도 조절 팩 (레벨 오를수록 가속)
+            dropInterval = Math.max(80, 1000 - (player.level - 1) * 90);
         }
 
-        // 회전
         function rotate(matrix, dir) {
             for (let y = 0; y < matrix.length; ++y) {
                 for (let x = 0; x < y; ++x) {
-                    [
-                        matrix[x][y],
-                        matrix[y][x],
-                    ] = [
-                        matrix[y][x],
-                        matrix[x][y],
-                    ];
+                    [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
                 }
             }
-            if (dir > 0) {
-                matrix.forEach(row => row.reverse());
-            } else {
-                matrix.reverse();
-            }
+            if (dir > 0) matrix.forEach(row => row.reverse());
+            else matrix.reverse();
         }
 
         function playerRotate(dir) {
@@ -391,9 +392,7 @@
 
         function playerMove(dir) {
             player.pos.x += dir;
-            if (collide(arena, player)) {
-                player.pos.x -= dir;
-            }
+            if (collide(arena, player)) player.pos.x -= dir;
         }
 
         function playerReset() {
@@ -405,8 +404,7 @@
             }
             player.next = createPiece(pieces[pieces.length * Math.random() | 0]);
             player.pos.y = 0;
-            player.pos.x = (arena[0].length / 2 | 0) -
-                           (player.matrix[0].length / 2 | 0);
+            player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
             
             if (collide(arena, player)) {
                 arena.forEach(row => row.fill(0));
@@ -419,20 +417,12 @@
         }
 
         const arena = createMatrix(10, 20);
-
-        const player = {
-            pos: {x: 0, y: 0},
-            matrix: null,
-            next: null,
-            score: 0,
-            lines: 0,
-            level: 1,
-        };
+        const player = { pos: {x: 0, y: 0}, matrix: null, next: null, score: 0, lines: 0, level: 1 };
 
         let dropCounter = 0;
         let dropInterval = 1000;
         let lastTime = 0;
-        let paused = false;
+        let paused = true;
 
         function update(time = 0) {
             if (paused) return;
@@ -448,57 +438,61 @@
             requestAnimationFrame(update);
         }
 
-        // 조이스틱 조작 로직
-        const joystick = document.getElementById('joystick-zone');
-        const knob = document.getElementById('stick-knob');
-        let startX, startY;
-        const threshold = 30; // 조작 인식 범위(px)
+        // 기준좌표 복합 조이스틱 인터랙션 엔진 코드
+        const joystickZone = document.getElementById('joystick-zone');
+        const stickKnob = document.getElementById('stick-knob');
+        let startX = 0, startY = 0;
+        const threshold = 25; // 감도 조절 한계선
 
-        joystick.addEventListener('touchstart', e => {
+        joystickZone.addEventListener('touchstart', e => {
+            if (paused) return;
             startX = e.touches[0].clientX;
             startY = e.touches[0].clientY;
-            knob.style.display = 'block';
-            knob.style.left = '30px';
-            knob.style.top = '30px';
         });
 
-        joystick.addEventListener('touchmove', e => {
+        joystickZone.addEventListener('touchmove', e => {
             if (paused) return;
             const moveX = e.touches[0].clientX;
             const moveY = e.touches[0].clientY;
             const diffX = moveX - startX;
             const diffY = moveY - startY;
 
-            // 시각적 피드백
-            knob.style.transform = `translate(${Math.max(-30, Math.min(30, diffX))}px, ${Math.max(-30, Math.min(30, diffY))}px)`;
+            // 시각적 가상 놉 바인딩 리미트 계산
+            const maxDistance = 30;
+            const distance = Math.min(maxDistance, Math.sqrt(diffX*diffX + diffY*diffY));
+            const angle = Math.atan2(diffY, diffX);
+            const knobX = distance * Math.cos(angle);
+            const knobY = distance * Math.sin(angle);
+            
+            stickKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
 
+            // 최초 터치 지점 기준 상하좌우 매핑 감지 트래킹
             if (Math.abs(diffX) > threshold) {
                 playerMove(diffX > 0 ? 1 : -1);
-                startX = moveX; // 기준점 이동 (연속 이동 가능하게)
+                startX = moveX; // 드래그 중 연속 이동 보정 처리
+                draw();
             }
             if (diffY > threshold) {
                 playerDrop();
                 startY = moveY;
+                draw();
             }
-            if (diffY < -threshold) {
-                // 하드 드롭 (위로 드래그)
-                while (!collide(arena, player)) {
-                    player.pos.y++;
-                }
+            if (diffY < -threshold * 1.5) { // 위로 빠르게 쓸어올릴 때 하드 드롭
+                while (!collide(arena, player)) { player.pos.y++; }
                 player.pos.y--;
                 playerDrop();
                 startY = moveY;
+                draw();
             }
         });
 
-        joystick.addEventListener('touchend', () => {
-            knob.style.display = 'none';
-            knob.style.transform = `translate(0, 0)`;
+        joystickZone.addEventListener('touchend', () => {
+            stickKnob.style.transform = `translate(0px, 0px)`;
         });
 
-        // 기타 버튼 이벤트
+        // 우측 메뉴 액션 연동
         document.getElementById('rotate-btn').addEventListener('click', () => {
-            if (!paused) playerRotate(1);
+            if (!paused) { playerRotate(1); draw(); }
         });
 
         document.getElementById('start-btn').addEventListener('click', () => {
@@ -506,15 +500,18 @@
             arena.forEach(row => row.fill(0));
             playerReset();
             updateStats();
+            lastTime = performance.now();
             update();
         });
 
         document.getElementById('pause-btn').addEventListener('click', () => {
             paused = !paused;
-            if (!paused) update();
+            if (!paused) {
+                lastTime = performance.now();
+                update();
+            }
         });
 
-        // 초기화
         playerReset();
         draw();
         drawNext();
