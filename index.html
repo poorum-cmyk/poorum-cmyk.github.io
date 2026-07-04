@@ -164,6 +164,31 @@
       color: white;
       border-color: #6b4f34;
     }
+    .difficulty-select {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .difficulty-button {
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-radius: 14px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.2s ease;
+      font-weight: 600;
+    }
+    .difficulty-button:hover {
+      background: #dbeafe;
+      transform: translateY(-1px);
+    }
+    .difficulty-button.selected {
+      background: #2563eb;
+      color: white;
+      border-color: #2563eb;
+    }
     .guide h2 { margin-top: 0; }
     .guide ul { margin: 0; padding-left: 18px; color: #475569; }
     .guide ul li { margin-bottom: 10px; }
@@ -245,6 +270,10 @@
             <button type="button" class="player-button" data-player="이지연">이지연</button>
             <button type="button" class="player-button" data-player="김수빈">김수빈</button>
           </div>
+          <div class="difficulty-select">
+            <button type="button" class="difficulty-button selected" data-level="hard">고수</button>
+            <button type="button" class="difficulty-button" data-level="easy">하수</button>
+          </div>
           <button id="restartBtn">새 게임 시작</button>
         </div>
         <div class="guide">
@@ -277,6 +306,7 @@
     const statusText = document.getElementById('statusText');
     const restartBtn = document.getElementById('restartBtn');
     const playerButtons = document.querySelectorAll('.player-button');
+    const difficultyButtons = document.querySelectorAll('.difficulty-button');
     const resultBackdrop = document.getElementById('resultBackdrop');
     const closeResultBtn = document.getElementById('closeResultBtn');
 
@@ -287,6 +317,7 @@
     let gameOver = false;
     let currentPlayer = BLACK;
     let selectedPlayer = null;
+    let difficulty = 'hard';
     let gameStarted = false;
 
     function initBoard() {
@@ -337,7 +368,7 @@
     }
 
     function aiMove() {
-      const [ax, ay] = findBestMove();
+      const [ax, ay] = difficulty === 'easy' && Math.random() < 0.1 ? findSecondBestMove() : findBestMove();
       if (ax === null) {
         statusText.textContent = '무승부입니다.';
         gameOver = true;
@@ -355,7 +386,31 @@
       statusText.textContent = '흑차례입니다.';
     }
 
+    function getSortedMoves() {
+      const moves = [];
+      for (let y = 0; y < BOARD_SIZE; y += 1) {
+        for (let x = 0; x < BOARD_SIZE; x += 1) {
+          if (board[y][x] !== EMPTY) continue;
+          const score = evaluateCell(x, y, WHITE) + evaluateCell(x, y, BLACK) * 0.95;
+          moves.push({ x, y, score });
+        }
+      }
+      moves.sort((a, b) => b.score - a.score);
+      return moves;
+    }
+
     function findBestMove() {
+      const moves = getSortedMoves();
+      return moves.length ? [moves[0].x, moves[0].y] : [null, null];
+    }
+
+    function findSecondBestMove() {
+      const moves = getSortedMoves();
+      if (moves.length >= 2) {
+        return [moves[1].x, moves[1].y];
+      }
+      return moves.length ? [moves[0].x, moves[0].y] : [null, null];
+    }
       let bestScore = -Infinity;
       let bestMove = [null, null];
       for (let y = 0; y < BOARD_SIZE; y += 1) {
@@ -476,6 +531,11 @@
     playerButtons.forEach((button) => {
       button.addEventListener('click', () => {
         selectPlayer(button.dataset.player);
+      });
+    });
+    difficultyButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        selectDifficulty(button.dataset.level);
       });
     });
 
