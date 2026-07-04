@@ -139,6 +139,31 @@
       transition: opacity 0.2s ease, transform 0.2s ease;
     }
     .controls button:hover { opacity: 0.95; transform: translateY(-1px); }
+    .player-select {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .player-button {
+      border: 1px solid rgba(107, 79, 52, 0.3);
+      background: #f7ede0;
+      color: #5d432e;
+      border-radius: 14px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.2s ease;
+      font-weight: 600;
+    }
+    .player-button:hover {
+      background: #e8d2bc;
+      transform: translateY(-1px);
+    }
+    .player-button.selected {
+      background: #6b4f34;
+      color: white;
+      border-color: #6b4f34;
+    }
     .guide h2 { margin-top: 0; }
     .guide ul { margin: 0; padding-left: 18px; color: #475569; }
     .guide ul li { margin-bottom: 10px; }
@@ -149,6 +174,46 @@
       gap: 20px;
       color: #6b4f34;
       font-size: 0.95rem;
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      padding: 16px;
+    }
+    .modal-backdrop.active {
+      display: flex;
+    }
+    .modal {
+      width: min(420px, 100%);
+      background: #ffffff;
+      border-radius: 22px;
+      box-shadow: 0 30px 80px rgba(15, 23, 42, 0.18);
+      padding: 28px 24px;
+      text-align: center;
+    }
+    .modal h2 {
+      margin: 0 0 14px;
+      font-size: 1.45rem;
+      color: #2b2b2b;
+    }
+    .modal p {
+      margin: 0 0 22px;
+      color: #475569;
+      line-height: 1.6;
+    }
+    .modal button {
+      border: none;
+      border-radius: 14px;
+      background: #6b4f34;
+      color: white;
+      padding: 12px 20px;
+      cursor: pointer;
+      font-size: 1rem;
     }
     @media (max-width: 900px) {
       .content { grid-template-columns: 1fr; }
@@ -175,6 +240,11 @@
           <span id="statusText">흑차례입니다.</span>
         </div>
         <div class="controls">
+          <div class="player-select">
+            <button type="button" class="player-button" data-player="김근태">김근태</button>
+            <button type="button" class="player-button" data-player="이지연">이지연</button>
+            <button type="button" class="player-button" data-player="김수빈">김수빈</button>
+          </div>
           <button id="restartBtn">새 게임 시작</button>
         </div>
         <div class="guide">
@@ -193,11 +263,22 @@
     </div>
   </div>
 
+  <div class="modal-backdrop" id="resultBackdrop">
+    <div class="modal">
+      <h2 id="resultTitle">게임 종료</h2>
+      <p id="resultMessage">결과가 나왔습니다.</p>
+      <button id="closeResultBtn">확인</button>
+    </div>
+  </div>
+
   <script>
     const BOARD_SIZE = 15;
     const boardElement = document.getElementById('board');
     const statusText = document.getElementById('statusText');
     const restartBtn = document.getElementById('restartBtn');
+    const playerButtons = document.querySelectorAll('.player-button');
+    const resultBackdrop = document.getElementById('resultBackdrop');
+    const closeResultBtn = document.getElementById('closeResultBtn');
 
     const EMPTY = 0;
     const BLACK = 1;
@@ -205,6 +286,8 @@
     let board = [];
     let gameOver = false;
     let currentPlayer = BLACK;
+    let selectedPlayer = null;
+    let gameStarted = false;
 
     function initBoard() {
       board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(EMPTY));
@@ -234,6 +317,7 @@
       if (checkWin(x, y, BLACK)) {
         statusText.textContent = '흑 승리! 게임 종료.';
         gameOver = true;
+        showGameResult('player');
         return;
       }
       currentPlayer = WHITE;
@@ -257,12 +341,14 @@
       if (ax === null) {
         statusText.textContent = '무승부입니다.';
         gameOver = true;
+        showGameResult('draw');
         return;
       }
       placeStone(ax, ay, WHITE);
       if (checkWin(ax, ay, WHITE)) {
         statusText.textContent = 'AI (백) 승리! 게임 종료.';
         gameOver = true;
+        showGameResult('ai');
         return;
       }
       currentPlayer = BLACK;
@@ -366,8 +452,67 @@
       return x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
     }
 
-    restartBtn.addEventListener('click', initBoard);
+    function showResult(title, message) {
+      const titleElement = document.getElementById('resultTitle');
+      const messageElement = document.getElementById('resultMessage');
+      titleElement.textContent = title;
+      messageElement.textContent = message;
+      resultBackdrop.classList.add('active');
+    }
+
+    function showGameResult(winner) {
+      if (winner === 'draw') {
+        showResult('무승부', '더 이상 둘 곳이 없습니다. 무승부입니다.');
+        return;
+      }
+      const isPlayerWinner = winner === 'player';
+      const title = isPlayerWinner ? `${selectedPlayer}님 승리!` : 'AI 승리';
+      const message = isPlayerWinner
+        ? `${selectedPlayer}님이 5목을 완성했습니다. 축하합니다!`
+        : `${selectedPlayer}님이 졌습니다. 다음에 다시 도전해보세요.`;
+      showResult(title, message);
+    }
+
+    playerButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        selectPlayer(button.dataset.player);
+      });
+    });
+
+    closeResultBtn.addEventListener('click', () => {
+      resultBackdrop.classList.remove('active');
+    });
+    resultBackdrop.addEventListener('click', (event) => {
+      if (event.target === resultBackdrop) {
+        resultBackdrop.classList.remove('active');
+      }
+    });
+
+    restartBtn.addEventListener('click', () => {
+      if (!selectedPlayer) {
+        statusText.textContent = '플레이어를 선택한 후 게임을 시작하세요.';
+        return;
+      }
+      startGame();
+    });
+
     initBoard();
+
+    function selectPlayer(name) {
+      selectedPlayer = name;
+      playerButtons.forEach((button) => {
+        button.classList.toggle('selected', button.dataset.player === name);
+      });
+      statusText.textContent = `${name}님을 선택했습니다. 새 게임 시작을 눌러주세요.`;
+    }
+
+    function startGame() {
+      initBoard();
+      gameOver = false;
+      currentPlayer = BLACK;
+      gameStarted = true;
+      statusText.textContent = `${selectedPlayer}님 차례입니다. 흑돌을 놓으세요.`;
+    }
   </script>
 </body>
 </html>
