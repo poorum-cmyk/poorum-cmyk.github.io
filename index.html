@@ -11,7 +11,7 @@
     .game{display:flex;gap:12px;align-items:flex-start;flex:1}
     .play-area{display:flex;flex-direction:column;align-items:center;gap:8px;position:relative}
     canvas{background:linear-gradient(180deg,#0b3248,#07324a);border-radius:8px;box-shadow:0 8px 24px rgba(2,6,23,0.6);display:block}
-    .right-panel{width:var(--panel-width);min-width:var(--panel-width);background:var(--panel);border-radius:10px;padding:12px 10px;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+    .right-panel{width:var(--panel-width);min-width:var(--panel-width);background:var(--panel);border-radius:10px;padding:12px 10px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
     .score{font-size:16px;font-weight:800;color:var(--accent)}
     .info{font-size:13px;color:#9fb0c4}
     .controls-row{display:flex;align-items:center;justify-content:flex-start;gap:12px;width:100%}
@@ -48,10 +48,10 @@
       <div class="right-panel" id="rightPanel">
         <div class="score">스코어: <span id="score">0</span></div>
         <div class="info">다음 조각</div>
-        <canvas id="next" width="120" height="120" style="background:transparent;border-radius:8px"></canvas>
+        <canvas id="next" width="84" height="84" style="background:transparent;border-radius:8px"></canvas>
         <div class="info">레벨: <span id="level">1</span></div>
         <div class="info">라인: <span id="lines">0</span></div>
-        <div style="width:100%;display:flex;flex-direction:column;gap:8px;margin-top:6px;align-items:center">
+        <div style="width:100%;display:flex;flex-direction:column;gap:6px;margin-top:0;align-items:center">
           <button id="startBtn" class="play-btn">시작</button>
           <button id="pauseBtn" class="play-btn">일시정지</button>
         </div>
@@ -111,7 +111,7 @@
       ctx.setTransform(dpr,0,0,dpr,0,0);
       BLOCK = Math.floor(cssWidth / COLS);
       // next preview
-      const nw = 120, nh = 120; nextCanvas.style.width = nw + 'px'; nextCanvas.style.height = nh + 'px'; nextCanvas.width = nw * dpr; nextCanvas.height = nh * dpr; nctx.setTransform(dpr,0,0,dpr,0,0);
+      const nw = 84, nh = 84; nextCanvas.style.width = nw + 'px'; nextCanvas.style.height = nh + 'px'; nextCanvas.width = nw * dpr; nextCanvas.height = nh * dpr; nctx.setTransform(dpr,0,0,dpr,0,0);
       // set controlsRow width
       const controlsRow = document.getElementById('controlsRow'); if(controlsRow) controlsRow.style.width = cssWidth + 'px';
       // align rotate button vertically to joystick center
